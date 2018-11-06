@@ -109,16 +109,11 @@ class BluePMT(Picoscope):
             'frac_fit': frac_fit,
             'tot_fit': tot_fit,
             }
-        #Mod for Sr 1
-        name_tuple = os.path.split(rel_data_path)
-        file_name = name_tuple[1]
-        path_tuple = os.path.split(name_tuple[0])
-        abs_data_dir = os.path.join(self.data_path, path_tuple[0], 'scans', path_tuple[1])         
-        #abs_data_dir = os.path.join(self.data_path, os.path.dirname(rel_data_path))
+        abs_data_dir = os.path.join(self.data_path, os.path.dirname(rel_data_path))
         if not os.path.isdir(abs_data_dir):
             os.makedirs(abs_data_dir)
     
-        abs_data_path = os.path.join(self.data_path, path_tuple[0], 'scans', path_tuple[1], file_name)         
+        abs_data_path = os.path.join(self.data_path, rel_data_path)         
         if self.verbose:
             print "saving processed data to {}".format(abs_data_path)
 

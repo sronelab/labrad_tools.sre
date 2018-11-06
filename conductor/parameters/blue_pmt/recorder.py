@@ -41,6 +41,11 @@ class Recorder(ConductorParameter):
         if (experiment_name is not None) and (sequence is not None):
             point_filename = self.data_filename.format(shot_number)
             rel_point_path = os.path.join(experiment_name, point_filename)
+            #Mod for Sr 1
+            name_tuple = os.path.split(rel_point_path)
+            file_name = name_tuple[1]
+            path_tuple = os.path.split(name_tuple[0])
+            rel_point_path = os.path.join(path_tuple[0], 'scans', path_tuple[1],file_name) 
             
             if sequence.loop:
 #                print 'pre', sequence.previous_value
@@ -49,10 +54,15 @@ class Recorder(ConductorParameter):
             elif np.intersect1d(sequence.value, self.record_sequences):
 #                print 'now', sequence.value
                 value = rel_point_path
-#            sequence_value = self.server._get_parameter_value('sequencer.sequence')
-#            if np.intersect1d(sequence_value, self.record_sequences):
-#                value = rel_point_path
-
+        elif sequence is not None:
+            rel_point_path = "pmt_data"
+            if sequence.loop:
+#                print 'pre', sequence.previous_value
+                if np.intersect1d(previous_sequence.value, self.record_sequences):
+                    value = rel_point_path
+            elif np.intersect1d(sequence.value, self.record_sequences):
+#                print 'now', sequence.value
+                value = rel_point_path
         return value
     
     @value.setter
