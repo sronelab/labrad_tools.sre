@@ -13,6 +13,7 @@ class Sequence(ConductorParameter):
     value = ['constant_blues'] * 1
 
     loop = True
+    call_in_thread = True
 
     ok_master_servername = 'yeelmo_ok'
     ok_master_interfacename = '1541000D3S'
@@ -35,10 +36,9 @@ class Sequence(ConductorParameter):
 
 #        request = {device_name: {} for device_name in self.sequencer_devices}
 #        self.sequencer_server.reload_devices(json.dumps(request))
-        self.update()
+        callInThread(self.update)
     
     def update(self):
-        print self.previous_value, self.value, self.next_value
         """ value is list of strings """
         # first check if we are running
         request = {self.sequencer_master_device: None}
@@ -66,7 +66,6 @@ class Sequence(ConductorParameter):
 #                self.sequencer_server.sequence(json.dumps(request))
 #                self.server.experiment['repeat_shot'] = True
                 request = what_i_think_is_running
-                print 'request', request
                 self.sequencer_server.sequence(json.dumps(request))
 #                self.value = what_is_running['abcd']
                 self.server.experiment['repeat_shot'] = True
@@ -77,9 +76,10 @@ class Sequence(ConductorParameter):
         if (not self.loop) and running:
             raise Exception('something is wrong with sequencer.sequence')
         
-        callInThread(self._advance_on_trigger)
+        #callInThread(self._advance_on_trigger)
+        self._advance_on_trigger()
 
-    def _wait_far_trigger(self):
+    def _wait_for_trigger(self):
         # clear trigger
         self.fp.UpdateTriggerOuts()
         is_triggered = self.fp.IsTriggered(0x60)
@@ -89,10 +89,21 @@ class Sequence(ConductorParameter):
             is_triggered = self.fp.IsTriggered(0x60)
             if is_triggered:
                 return
+            time.sleep(0.01)
 
     def _advance_on_trigger(self):
-        #self._wait_far_trigger()
-        self.fp._wait_trigger(0x60)
-        self.server._advance()
+        self._wait_for_trigger()
+#        self.fp._wait_trigger(0x60)
+        self._mark_timestamp()
+        #self.server._advance()
+        conductor_server = getattr(self.cxn, 'conductor')
+        conductor_server.advance()
+
+    def _mark_timestamp(self):
+        #self.server._set_parameter_value('timestamp', time.time())
+        conductor_server = getattr(self.cxn, 'conductor')
+        request = {'timestamp': time.time()}
+        conductor_server.set_parameter_values(json.dumps(request))
+
 
 Parameter = Sequence

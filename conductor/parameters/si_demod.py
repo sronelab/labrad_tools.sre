@@ -5,7 +5,7 @@ sys.path.append('/home/srgang/Password/')
 from srq_password import password as srqPassword
 
 class SiDemod(ConductorParameter):
-    priority = 1
+    priority = 6
     autostart = True
     def initialize(self,config):
         #Connect to stable lasers demod server on Sr2 network

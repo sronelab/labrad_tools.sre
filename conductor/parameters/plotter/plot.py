@@ -8,7 +8,7 @@ from twisted.internet.defer import inlineCallbacks
 from conductor.parameter import ConductorParameter
 
 class Plot(ConductorParameter):
-    autostart = True
+    autostart = False
     data_directory = "/media/j/data/"
     priority = 1
 
@@ -21,8 +21,7 @@ class Plot(ConductorParameter):
         if self.value and (experiment_name is not None):
 	    try:
                 settings = json.loads(self.value)
-	        name_tuple = os.path.split(experiment_name)
-                experiment_directory = os.path.join(self.data_directory, name_tuple[0], 'scans', name_tuple[1])
+                experiment_directory = os.path.join(self.data_directory,experiment_name)
                 settings['data_path'] = experiment_directory
             	self.cxn.plotter.plot(json.dumps(settings))
             except:

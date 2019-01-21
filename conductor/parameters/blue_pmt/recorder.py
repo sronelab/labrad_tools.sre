@@ -11,6 +11,7 @@ class Recorder(ConductorParameter):
     autostart = True
     priority = 8
     data_filename = '{}.blue_pmt'
+    nondata_filename = '{}/blue_pmt'
     pmt_name = 'blue_pmt'
     record_sequences = [
         'lattice_sb_linescan',
@@ -21,7 +22,13 @@ class Recorder(ConductorParameter):
         'sf_red_some_test',
         'lattice_mF_scan',
         'co_pulse_plus',
-        'co_pulse_minus'
+        'co_pulse_minus',
+        'ramsey_pol_m',
+	'ramsey_pol_m_alt',
+        'ramsey_pol_p',
+	'ramsey_pol_p_alt',
+	'ramsey_echo_pol_m',
+	'ramsey_echo_pol_p'
         ]
 
     def initialize(self, config):
@@ -41,28 +48,15 @@ class Recorder(ConductorParameter):
         if (experiment_name is not None) and (sequence is not None):
             point_filename = self.data_filename.format(shot_number)
             rel_point_path = os.path.join(experiment_name, point_filename)
-            #Mod for Sr 1
-            name_tuple = os.path.split(rel_point_path)
-            file_name = name_tuple[1]
-            path_tuple = os.path.split(name_tuple[0])
-            rel_point_path = os.path.join(path_tuple[0], 'scans', path_tuple[1],file_name) 
-            
-            if sequence.loop:
-#                print 'pre', sequence.previous_value
-                if np.intersect1d(previous_sequence.value, self.record_sequences):
-                    value = rel_point_path
-            elif np.intersect1d(sequence.value, self.record_sequences):
-#                print 'now', sequence.value
-                value = rel_point_path
         elif sequence is not None:
-            rel_point_path = "pmt_data"
-            if sequence.loop:
-#                print 'pre', sequence.previous_value
-                if np.intersect1d(previous_sequence.value, self.record_sequences):
-                    value = rel_point_path
-            elif np.intersect1d(sequence.value, self.record_sequences):
-#                print 'now', sequence.value
+            rel_point_path = self.nondata_filename.format(time.strftime('%Y%m%d'))
+            
+        if sequence.loop:
+            if np.intersect1d(previous_sequence.value, self.record_sequences):
                 value = rel_point_path
+        elif np.intersect1d(sequence.value, self.record_sequences):
+            value = rel_point_path
+
         return value
     
     @value.setter
@@ -72,7 +66,7 @@ class Recorder(ConductorParameter):
     def update(self):
         if self.value is not None:
             request = {self.pmt_name: self.value}
-            print request
             self.cxn.pmt.record(json.dumps(request))
 
 Parameter = Recorder
+

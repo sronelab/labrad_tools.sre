@@ -7,6 +7,6 @@ class Timestamp(ConductorParameter):
     priority = 100
 
     def update(self):
-        self.value = time.time()
+        pass
 
 Parameter = Timestamp

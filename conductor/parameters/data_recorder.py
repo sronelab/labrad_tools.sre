@@ -1,9 +1,13 @@
 import os
 import json
+import copy
+import time
+from twisted.internet import reactor
 
 from conductor.parameter import ConductorParameter
 
 class DataRecorder(ConductorParameter):
+    priority = -1
     autostart = True
     data_directory = os.path.join(os.getenv('PROJECT_DATA_PATH'), 'data')
     data_filename = '{}.conductor.json'
@@ -14,9 +18,7 @@ class DataRecorder(ConductorParameter):
         shot_number = self.server.experiment.get('shot_number')
 
         if experiment_name is not None:
-	    name_tuple = os.path.split(experiment_name)
-	   #Mod for Sr1 data saving convention
-            experiment_directory = os.path.join(self.data_directory, name_tuple[0], 'scans', name_tuple[1])
+            experiment_directory = os.path.join(self.data_directory, experiment_name)
             if not os.path.isdir(experiment_directory):
                 os.makedirs(experiment_directory)
         
@@ -24,8 +26,11 @@ class DataRecorder(ConductorParameter):
             point_path = os.path.join(experiment_directory, point_filename)
             
             parameter_values = self.server._get_parameter_values(request={}, all=True)
-            with open(point_path, 'w') as outfile:
-                json.dump(parameter_values, outfile, default=lambda x: None)
+            reactor.callInThread(self._save_json, point_path, copy.deepcopy(parameter_values))
     
+    def _save_json(self, point_path, parameter_values):
+       with open(point_path, 'w') as outfile:
+           json.dump(parameter_values, outfile, default=lambda x: None)
+
     
 Parameter = DataRecorder

@@ -1,6 +1,8 @@
 from conductor.parameter import ConductorParameter
 from control_loops import PID, PIID
-
+import json
+import os
+ 
 class FeedbackPoint(ConductorParameter):
     """ 
     example_config = {
@@ -21,36 +23,37 @@ class FeedbackPoint(ConductorParameter):
     locks = {}
     priority = 9
     autostart = True
+    value_type = 'list'
 
     def initialize(self, config):
         super(FeedbackPoint, self).initialize(config)
         self.connect_to_labrad()
-        locks = config.get('locks')
-        if locks is not None:
-            for name, settings in locks.items():
-                if settings['type'] == 'PID':
-                    setattr(self, name, PID(**settings))
-                if settings['type'] == 'PIID':
-                    setattr(self, name, PIID(**settings))
+        for name, settings in self.locks.items():
+            if settings['type'] == 'PID':
+                self.locks[name] = PID(**settings)
+            if settings['type'] == 'PIID':
+                self.locks[name] = PIID(**settings)
 
-    def _get_lock(self, lock_name):
-        print "get lock for feedback point"
+    def _get_lock(self, lock):
         if lock not in self.locks:
             message = 'lock ({}) not defined in {}'.format(lock, self.name)
             raise Exception(message)
         else:
-            return self.locks[lock_name]
-
+            return self.locks[lock]
     def update(self):
-        print "updating feedback_point"
-        if self.value is not None:
-            name, side = self.value
+        experiment_name = self.server.experiment.get('name')
+        if (self.value is not None) and (experiment_name is not None):
+            name, side, shot = self.value
             control_loop = self._get_lock(name)
-            request = {'blue_pmt': '{}.blue_pmt'.format(control_loop.pmt_shot_number)}
+
+            point_filename = '{}.blue_pmt'.format(shot)
+            point_path = os.path.join(experiment_name, point_filename)
+
+            request = {'blue_pmt': point_path}
             response_json = self.cxn.pmt.retrive_records(json.dumps(request))
             response = json.loads(response_json)
-            frac = response['frac_fit']
-            tot = response['tot_fit']
+            frac = response['blue_pmt']['frac_fit']
+            tot = response['blue_pmt']['tot_fit']
 
             if tot > control_loop.tot_cutoff:
                 control_loop.tick(side, frac)
